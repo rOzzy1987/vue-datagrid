@@ -34,7 +34,7 @@ abstract class DownloaderBase {
         return this._impl;
     } 
 }
-export default class Downloader extends DownloaderBase implements IDownloader {
+export class Downloader extends DownloaderBase implements IDownloader {
     public async download(content: string | Blob, fileName: string){
         (await this.getImpl()).download(content, fileName);
     }

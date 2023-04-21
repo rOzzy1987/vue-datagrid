@@ -108,8 +108,8 @@
 <script lang="ts">
 import CommandButton from './CommandButton.vue';
 import RowCommandButton from './RowCommandButton.vue';
-import Downloader from './Downloader';
-import Printer from './Printer';
+import { Downloader } from './Downloader';
+import { Printer } from './Printer';
 
 import type { IGridColumnDefinition } from './GridColumnDefinition';
 import { GridBaseCommandDefinition, GridCommandDefinition, GridRowCommandDefinition } from './GridCommandDefinition';
