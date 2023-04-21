@@ -8,7 +8,7 @@
 <script lang="ts">
 import { GridStyleParser } from './DataGrid.vue';
 import { GridBaseCommandDefinition } from './GridCommandDefinition';
-import { GridCommandStyleDefinition } from './style';
+import { GridCommandStyleDefinition, GridRowCommandStyleDefinition } from './style';
 export default {
     data() {
         return {
@@ -17,7 +17,7 @@ export default {
     },
     props: {
         cmd: {type: GridBaseCommandDefinition, required: true},
-        styling: {type: GridCommandStyleDefinition, required: true}
+        styling: {type: GridCommandStyleDefinition, default: new GridRowCommandStyleDefinition() }
     }
 }
 </script>

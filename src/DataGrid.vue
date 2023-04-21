@@ -1,31 +1,31 @@
 <template>
     <div :class="styling.mainContainerClass" style="width: 100%; overflow-x: auto;" :style="{'user-select': selectionMode != GridSelectionMode.None ? 'none': 'initial'}">
-        <div v-if="title != ''" class="control">
+        <div v-if="title != ''" :class="styling.titleClass">
             {{ title }}
         </div>
-        <div v-if="isColumnListOrderable || optionalColumns.length > 0" class="has-text-right">
-            <div class="dropdown is-right column-customizer" :class="{'is-active': columnCustomization.selectorActive}" >
-                <div class="dropdown-trigger" style="right: 0 !important">
-                    <button ref="columnsButton" class="button has-icon is-small" aria-haspopup="true" aria-controls="dropdown-menu" @click.prevent="columnCustomization.selectorActive = !columnCustomization.selectorActive">
-                        <i class="fas fa-table-columns"></i>
+        <div v-if="isColumnListOrderable || optionalColumns.length > 0" :class="styling.columnCustomizer.containerClass ">
+            <div class="column-customizer" :class="styling.columnCustomizer.align +' '+ (columnCustomization.selectorActive ? styling.columnCustomizer.activeClass : '')" >
+                <div class="column-customizer-trigger" style="right: 0 !important">
+                    <button ref="columnsButton" :class="styling.columnCustomizer.triggerButtonClass" @click.prevent="columnCustomization.selectorActive = !columnCustomization.selectorActive">
+                        <i :class="styling.columnCustomizer.triggerButtonIconClass"></i>
                     </button>
                 </div>
-                <div class="dropdown-menu" role="menu">
-                    <div class="dropdown-content"
+                <div class="column-customizer-menu">
+                    <div class="column-customizer-content"
                         @mousemove="colOrderMoveItem($event, {x: $event.clientX, y: $event.clientY})"
                         @touchmove="colOrderMoveItem($event, {x: $event.touches[0].clientX, y: $event.touches[0].clientY})"
                         @mouseup="colOrderReleaseItem($event)"
                         @touchend="colOrderReleaseItem($event)" :key="columnCustomization.key">
-                        <div v-for="col of _columns" :key="col.id" :name="col.id" class="dropdown-item has-text-left" @click.prevent="if (col.isOptional) col.isHidden = !col.isHidden;">
-                            <span class="icon is-pulled-left">
-                                <i :class="{'far fa-square-plus': col.isOptional && col.isHidden, 'fas fa-square-minus': col.isOptional && !col.isHidden}"></i>
+                        <div v-for="col of _columns" :key="col.id" :name="col.id" class="column-customizer-item" @click.prevent="if (col.isOptional) col.isHidden = !col.isHidden;">
+                            <span :class="styling.columnCustomizer.checkboxButtonClass">
+                                <i :class="!col.isOptional ? '' : col.isHidden ? styling.columnCustomizer.checkboxButtonIconUncheckedClass : styling.columnCustomizer.checkboxButtonIconCheckedClass"></i>
                             </span>
-                            <span class="icon is-pulled-right" v-if="isColumnListOrderable"
+                            <span :class="styling.columnCustomizer.orderButtonClass" v-if="isColumnListOrderable"
                                 @mousedown="colOrderGrabItem($event, {x: $event.clientX, y: $event.clientY})"
                                 @touchstart="colOrderGrabItem($event, {x: $event.touches[0].clientX, y: $event.touches[0].clientY})">
-                                <i class="fas fa-bars"></i>
+                                <i :class="styling.columnCustomizer.orderButtonIconClass"></i>
                             </span>
-                            <span class="text">{{ col.title }}</span>
+                            <span class="column-customizer-text">{{ col.title }}</span>
                         </div>
                     </div>
                 </div>
@@ -53,6 +53,11 @@
                     </tr>
                     <tr v-if="_modelValue.length == 0">
                         <td :colspan="columnCount">{{ emptyText }}</td>
+                    </tr>
+                    <tr v-if="_modelValue.length != 0 && canShowMore">
+                        <td :colspan="columnCount" :class="styling.showMoreCommandRowClass">
+                            <CommandButton :styling="styling.showMoreCommand" :cmd="new GridCommandDefinition(() => {}).withLabel(showMoreText)" @click="showMore" />
+                        </td>
                     </tr>
                 </tbody>
                 <tfoot>
@@ -101,12 +106,13 @@
     </div>
 </template>
 <script lang="ts">
-import { Device } from '@capacitor/device';
 import CommandButton from './CommandButton.vue';
+import RowCommandButton from './RowCommandButton.vue';
 import Downloader from './Downloader';
+import Printer from './Printer';
+
 import type { IGridColumnDefinition } from './GridColumnDefinition';
 import { GridBaseCommandDefinition, GridCommandDefinition, GridRowCommandDefinition } from './GridCommandDefinition';
-import RowCommandButton from './RowCommandButton.vue';
 import { GridCommandStyleDefinition, GridStyleDefinition } from './style';
 
 export enum GridSelectionMode {
@@ -173,8 +179,6 @@ export default {
                 origin: null as {x:number, y: number} | null,
                 key: "rndKey"
             }, 
-            downloader: new Downloader(),
-            isWebApp: false,
             GridSelectionMode: GridSelectionMode,
             styleParser: GridStyleParser,
             GridCommandDefinition: GridCommandDefinition
@@ -201,6 +205,8 @@ export default {
         // Paging
         itemsPerPage: { type: Number, default: Number.POSITIVE_INFINITY },
         page: { type: Number, default: 0 },
+        canShowMore: { type: Boolean, default: false },
+        showMoreText: {type: String, default: "Show more"},
         // Internationalization
         emptyText: { type: String, default: "- No data -" },
         exportText: {type: String, default: "Export to CSV"},
@@ -209,7 +215,10 @@ export default {
         pagingFooterText: { type: String },
         itemsFooterText: { type: String },
         itemsPerPageSelectorText: {type: String, default: "Items per page: "},
-        styling: { type: GridStyleDefinition, default: new GridStyleDefinition() }
+        styling: { type: GridStyleDefinition, default: new GridStyleDefinition() },
+        
+        downloader: { type: Downloader, default: new Downloader() },
+        printer: { type: Printer, default: new Printer() },
     },
     methods: {
         colOrderGrabItem(event: Event, origin: {x:number, y: number}) {
@@ -217,7 +226,7 @@ export default {
             if(this._columns.length < 2) return;
             const cc = this.columnCustomization;
             let i = 0;
-            while (!item.classList.contains('dropdown-item') && i < 3) {
+            while (!item.classList.contains('column-customizer-item') && i < 3) {
                 item = item.parentElement!;
             } 
             cc.columnGrabbed = item;
@@ -428,13 +437,6 @@ export default {
         print() {
             const styles = document.head.getElementsByTagName("style");
             const links = document.head.getElementsByTagName("link");
-            const printWindow = window.open('', '', 'left=0,top=0,width=800,height=900,toolbar=0,scrollbars=0,status=0') as Window;
-            
-            const h = printWindow.document.createElement("html");
-            const hh = printWindow.document.createElement("head");
-            const b = printWindow.document.createElement("body");
-            h.appendChild(hh);
-            h.appendChild(b);
             let hTxt = "<style>.no-print{display: none !important;} thead{display: table-header-group !important;} tfoot{display: table-footer-group !important;}</style><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";
             for (let i = 0; i < links.length; i++) {
                 const l = links.item(i) as HTMLLinkElement;
@@ -445,7 +447,6 @@ export default {
                 const s = styles.item(i) as HTMLStyleElement;
                 hTxt += s.outerHTML;
             }
-            hh.innerHTML = hTxt;
             let table = "<table class=\"table is-fullwidth\"><thead><tr>";
             for (const col of this._columns) {
                 table += "<th class=\"" + col.headerCssClasses.join(" ") + "\" style=\"" + (col.headerStyle ?? "") + "\">"+col.title+"</th>";
@@ -468,20 +469,8 @@ export default {
                 table += "</tr><tfoot>";
             }
             table += "</table>";
-            b.innerHTML = table;
-            let isPrinted = false;
-            function printFn() {
-                if(isPrinted) return;
-                isPrinted = true;
-                printWindow.focus();
-                printWindow.print();
-                printWindow.close();
-            }
 
-            printWindow.document.write(h.outerHTML);
-            printWindow.document.onload = printFn;
-            setTimeout(printFn, 500); // leave some time to load stylesheets
-            printWindow.document.close();
+            this.printer.print(`<html><head>${hTxt}</head><body>${table}</body></html>`);
         },
         getColumnStates(): {id: string, isHidden: boolean}[] {
             return this._columns.map(c=> ({id: c.id, isHidden: c.isOptional && c.isHidden}));
@@ -502,6 +491,9 @@ export default {
                 }
             }
             this._columns = newColumns;
+        },
+        showMore() {
+            this.$emit("showMore", this._modelValue.length);
         }
     },
     computed: {
@@ -562,7 +554,7 @@ export default {
                         .withLabel(this.exportText);
                     r.push(csvCmd);
                 }
-                if(this.isPrintEnabled && this.isWebApp) {
+                if(this.isPrintEnabled) {
                     const printCmd = 
                         new GridCommandDefinition(() => this.print())
                         .withIcon("fas fa-print")
@@ -604,6 +596,16 @@ export default {
             return this.$refs.columnsButton as HTMLButtonElement;
         }
     },
+    emits: [
+        "update:modelValue",
+        "update:itemsPerPage",
+        "update:page",
+        "update:selectedItems",
+        "update:sortAscending",
+        "update:sortByColumn",
+        "update:columns",
+        "showMore"
+    ],
     watch: {
         modelValue: {
             handler(newVal) { this._modelValue = newVal; },
@@ -630,9 +632,6 @@ export default {
             this._page = 0;
         }
     },
-    async mounted() {
-        this.isWebApp = (await Device.getInfo()).platform == "web";
-    },
     components: { CommandButton, RowCommandButton }
 }
 </script>
@@ -644,15 +643,50 @@ export default {
     }
 }
 
-.column-customizer .dropdown-item {
+.column-customizer {
+    position: relative;
     z-index: 10;
 }
 
-.column-customizer .dropdown-item.grabbed {
+.column-customizer-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    box-shadow: 5px 5px 10px rgba(0, 0, 0, .3);
+    border-radius: 10px;
+    border: 1px solid #DDD;
+    background: #FFF;
+}
+.column-customizer.is-active .column-customizer-menu {
+    display:block;
+}
+.column-customizer.right .column-customizer-menu{
+    right: 0;
+}
+.column-customizer.left .column-customizer-menu{
+    left: 0;
+}
+
+.column-customizer-content {
+    padding: 5px 0;
+}
+.column-customizer-item {
+    padding: 3px 10px;
+    z-index: 10;
+}
+.column-customizer-item:hover {
+    background: #EEE;
+}
+.column-customizer-item.grabbed {
     z-index: 20;
     background-color: #FFF;
     box-shadow: 0 0.5em 1em -0.125em #0a0a0a1a, 0 0 0 1px #0a0a0a05;
     position: relative;
     opacity: .5;
 }
+
+.column-customizer-text {
+    margin: 0 10px;
+}
+
 </style>

@@ -28,7 +28,7 @@ export class GridColumnDefinition implements IGridColumnDefinition {
     private _style: string | undefined = undefined;
     private _headerCssClasses: Array<string> = [];
     private _headerStyle: string | undefined = undefined;
-    private _exportFn: (value: any) => any = this.formatFn;
+    private _exportFn: (value: any) => any = (v) => this.formatFn(v);
     private _isHtml = false;
     private _isOptional = false;
     public isHidden = false;

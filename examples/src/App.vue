@@ -1,8 +1,14 @@
 <script lang="ts">
+import CustomizableColumns from './components/CustomizableColumns.vue'
+import ExportPrint from './components/ExportPrint.vue'
+import GridWithPaging from './components/GridWithPaging.vue'
 import GridWithSort from './components/GridWithSort.vue'
 import SimpleGrid from './components/SimpleGrid.vue'
 export default {
-  components: { SimpleGrid, GridWithSort },
+  components: { SimpleGrid, GridWithSort,
+    CustomizableColumns,
+    GridWithPaging,
+    ExportPrint },
   data() {
     return {
       tabNo: 0
@@ -19,13 +25,18 @@ export default {
         <ul>
           <li :class="{'is-active': 0 == tabNo}" @click="tabNo = 0"><a>Bare minimum</a></li>
           <li :class="{'is-active': 1 == tabNo}" @click="tabNo = 1"><a>Sortable</a></li>
-          <!-- <li :class="{'is-active': 2 == tabNo}" @click="tabNo = 2"><a>Sortable</a></li> -->
+          <li :class="{'is-active': 2 == tabNo}" @click="tabNo = 2"><a>Customizable columns</a></li>
+          <li :class="{'is-active': 3 == tabNo}" @click="tabNo = 3"><a>Paging</a></li>
+          <li :class="{'is-active': 4 == tabNo}" @click="tabNo = 4"><a>Export & Print</a></li>
         </ul>
       </div>
 
       <div class="box">
         <simple-grid v-if="tabNo == 0" />
         <grid-with-sort v-if="tabNo == 1" />
+        <customizable-columns v-if="tabNo == 2" />
+        <grid-with-paging v-if="tabNo == 3" />
+        <export-print v-if="tabNo == 4" />
       </div>
     </main>
   </div>
