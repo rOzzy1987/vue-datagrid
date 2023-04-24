@@ -1,6 +1,6 @@
 {
   "name": "@rozzy/vue-datagrid",
-  "version": "0.1.8",
+  "version": "0.1.10",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.3.0",
     "sass": "^1.62.0",
@@ -44,7 +44,6 @@
     "examples/*.json",
     "examples/*.ts",
     "examples/*.cjs",
-    "examples/public/*",
     "examples/src/*"
   ],
   "author": "Mihály Rozovits <rozovits.mihaly@gmail.com>",

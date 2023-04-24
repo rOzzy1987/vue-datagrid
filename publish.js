@@ -43,37 +43,51 @@ function runCmd(cmd, args){
     });
 }
 
-async function incremeentIfNeeded(argc, argv) {
-    if(argc > 0){
-        if (argv[0] == "-i" || argv[0] == "--increment-version")
-        {
-            var rawdata = fs.readFileSync('package.json');
-            var packJson = JSON.parse(rawdata);
+async function checkArguments(argc, argv) {
+    var increment = false;
+    var message = undefined;
+    for(var i = 0; i < argc; i++) {
+        if (argv[i] == "-i" || argv[i] == "--increment-version")
+            increment = true;
+        if ((argv[i] == "-m" || argv[i] == "--message") && argc > i + 1)
+            message = argv[++i];
+    }
 
-            var match = /([0-9]+).([0-9]+).([0-9]+)/g.exec(packJson.version);
-            var maj = match[1];
-            var min = match[2];
-            var rev = Number(match[3]);
+    if (increment){
+        incrementVersion(message);
+    }
+}
 
-            packJson.version = `${maj}.${min}.${++rev}`;
 
-            fs.writeFileSync('package.json', JSON.stringify(packJson, null, 2));
+async function incrementVersion(message){
+    var rawdata = fs.readFileSync('package.json');
+    var packJson = JSON.parse(rawdata);
 
-            console.log("[Publish] package.json updated, new version: " + packJson.version);
+    var match = /([0-9]+).([0-9]+).([0-9]+)/g.exec(packJson.version);
+    var maj = match[1];
+    var min = match[2];
+    var rev = Number(match[3]);
 
-            await runCmd("git", ["add", "package.json"]);
-            var status = await runCmd("git", ["status", "-s"]);
-            var changes = status.split(/\n/).map(l => l.trimEnd()).filter(l => l!= "");
+    packJson.version = `${maj}.${min}.${++rev}`;
 
-            if (changes.every(l => l.charAt(0) != ' ')) {
-                await runCmd("git", ["commit", "-m", `version bump to ${packJson.version}`]);
-                console.log("[Publish] committed")
-                await runCmd("git", ["push"]);
-                console.log("[Publish] pushed");
-            } else {
-                console.log("[Publish] Unstaged changes present, skipping commit & push");
-            }
-        }
+    fs.writeFileSync('package.json', JSON.stringify(packJson, null, 2));
+
+    console.log("[Publish] package.json updated, new version: " + packJson.version);
+
+    await runCmd("git", ["add", "package.json"]);
+    var status = await runCmd("git", ["status", "-s"]);
+    var changes = status.split(/\n/).map(l => l.trimEnd()).filter(l => l!= "");
+
+    if (changes.every(l => l.charAt(0) != ' ')) {
+        var msgLines = message == undefined ? [] : [message];
+        msgLines.push(`version bump to ${packJson.version}`);
+
+        await runCmd("git", ["commit", "-m", msgLines.join('\n')]);
+        console.log("[Publish] committed")
+        await runCmd("git", ["push"]);
+        console.log("[Publish] pushed");
+    } else {
+        console.log("[Publish] Unstaged changes present, skipping commit & push");
     }
 }
 
@@ -91,7 +105,7 @@ async function publish() {
 }
 
 async function main() {
-    await incremeentIfNeeded(argc, argv);
+    await checkArguments(argc, argv);
     await publish();
 }
 
