@@ -7,11 +7,15 @@ var argv = process.argv.slice(2);
 var argc = argv.length;
 
 var log = fs.createWriteStream("publish.log");
-var err = fs.createWriteStream("publish.error.log");
+var err = log;
+var clog = console.log;
+console.log = function(x) {
+    clog(x);
+    log.write(x+"\n");
+}
 
 function runCmd(cmd, args){
-
-    log.write(new Date().toISOString() +" Running command: "+ cmd + "\n");
+    log.write(new Date().toISOString() +" Running command: "+ cmd + " "+ args.join(" ") +"\n");
     var prc = spawn(cmd, args);
     var out = '';
     return new Promise((res, rej) => {
