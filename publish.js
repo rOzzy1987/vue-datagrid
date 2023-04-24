@@ -24,7 +24,7 @@ function runCmd(cmd, processFn){
 }
 
 function publish() {
-    runCmd("np publish --access public", (o) => {
+    runCmd("npm publish --access public", (o) => {
         console.log("Package published");
     });
 }
@@ -60,7 +60,7 @@ runCmd("git status -s", (changes) => {
                         console.log("committed")
                         runCmd(`git push`, () => {
                             console.log("pushed")
-                            //publish();
+                            publish();
                         });
                     });
 
