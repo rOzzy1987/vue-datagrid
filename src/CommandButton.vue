@@ -1,13 +1,14 @@
 <template>
-  <button :class="styleParser.getCommandClasses(styling, cmd, isActive)" :title="cmd.iconClass == '' || cmd.iconClass == undefined ? '' : cmd.label" :disabled="disabled">
-    <i v-if="cmd.iconClass != '' && cmd.iconClass != undefined" :class="cmd.iconClass"></i>
-    {{ cmd.iconClass == '' || cmd.iconClass == undefined ? cmd.label : "" }}
+  <button :class="styleParser.getCommandClasses(styling, cmdObj, isActive)" :title="cmdObj.iconClass == '' || cmdObj.iconClass == undefined ? '' : cmdObj.label" :disabled="disabled">
+    <i v-if="cmdObj.iconClass != '' && cmdObj.iconClass != undefined" :class="cmdObj.iconClass"></i>
+    {{ cmdObj.iconClass == '' || cmdObj.iconClass == undefined ? cmdObj.label : "" }}
   </button>
 </template>
 
 <script lang="ts">
+import { ref } from 'vue';
 import { GridStyleParser } from './DataGrid.vue';
-import { GridBaseCommandDefinition } from './GridCommandDefinition';
+import type { IGridBaseCommandDefinition } from './GridCommandDefinition';
 import { GridCommandStyleDefinition } from './style';
 export default {
     data() {
@@ -16,10 +17,13 @@ export default {
         }
     },
     props: {
-        cmd: { type: GridBaseCommandDefinition, required: true },
+        cmd: { type: ref<IGridBaseCommandDefinition>, required: true },
         styling: {type: GridCommandStyleDefinition, default: GridCommandStyleDefinition},
         disabled: { type: Boolean, default: false },
         isActive: { type: Boolean, default: false }
     },
+    computed: {
+      cmdObj(): IGridBaseCommandDefinition { return this.cmd.value!; }
+    }
 }
 </script>

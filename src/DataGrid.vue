@@ -48,7 +48,7 @@
                     <tr v-for="(item, j) of _pagedModelValue" :key="j" :class="styleParser.getDataRowClasses(styling, _selectedItems.indexOf(item) >= 0)" @click="itemClicked($event, j)">
                         <td v-for="col of displayedColumns" :key="col.idx" :style="col.column.style" :class="col.column.cssClasses" v-html="col.column.getHtml(item)"></td>
                         <td v-if="rowCommands.length > 0" class="no-print" >
-                            <RowCommandButton v-for="(cmd, i) in rowCommandsForItem(item)" :key="i" :cmd="cmd" :styling="styling.rowCommand" @click="cmd.command(item)"/>
+                            <RowCommandButton v-for="(cmd, i) in rowCommandsForItem(item)" :key="i" :cmd="ref(cmd)" :styling="styling.rowCommand" @click="cmd.command(item)"/>
                         </td>
                     </tr>
                     <tr v-if="_modelValue.length == 0">
@@ -56,7 +56,7 @@
                     </tr>
                     <tr v-if="_modelValue.length != 0 && pagingMode == GridPagingMode.ShowMore">
                         <td :colspan="columnCount" :class="styling.showMoreCommandRowClass">
-                            <CommandButton :styling="styling.showMoreCommand" :cmd="new GridCommandDefinition(() => {}).withLabel(showMoreText)" @click="showMore" />
+                            <CommandButton :styling="styling.showMoreCommand" :cmd="ref(new GridCommandDefinition(() => {}).withLabel(showMoreText))" @click="showMore" />
                         </td>
                     </tr>
                 </tbody>
@@ -71,13 +71,13 @@
                     </tr>
                     <tr v-if="_itemsPerPage != Number.POSITIVE_INFINITY" class="no-print">
                         <td :colspan="columnCount">
-                            <CommandButton :styling="styling.pagingCommand" :cmd="new GridCommandDefinition(() => {}).withIcon('fas fa-angles-left')" :disabled="_page == 0" @click.prevent="_page = 0"/>
-                            <CommandButton :styling="styling.pagingCommand" :cmd="new GridCommandDefinition(() => {}).withIcon('fas fa-angle-left')" :disabled="_page == 0" @click.prevent="_page--"/>
+                            <CommandButton :styling="styling.pagingCommand" :cmd="ref(new GridCommandDefinition(() => {}).withIcon('fas fa-angles-left'))" :disabled="_page == 0" @click.prevent="_page = 0"/>
+                            <CommandButton :styling="styling.pagingCommand" :cmd="ref(new GridCommandDefinition(() => {}).withIcon('fas fa-angle-left'))" :disabled="_page == 0" @click.prevent="_page--"/>
                             
-                            <CommandButton v-for="i in pageButtons" :key="i" :styling="styling.pagingCommand" :cmd="new GridCommandDefinition(() => {}).withLabel(`${i + 1}`)" @click.prevent="_page = i" :isActive="i == _page"/>
+                            <CommandButton v-for="i in pageButtons" :key="i" :styling="styling.pagingCommand" :cmd="ref(new GridCommandDefinition(() => {}).withLabel(`${i + 1}`))" @click.prevent="_page = i" :isActive="i == _page"/>
                             
-                            <CommandButton :styling="styling.pagingCommand" :cmd="new GridCommandDefinition(() => {}).withIcon('fas fa-angle-right')" :disabled="_page == lastPage" @click.prevent="_page++"/>
-                            <CommandButton :styling="styling.pagingCommand" :cmd="new GridCommandDefinition(() => {}).withIcon('fas fa-angles-right')" :disabled="_page == lastPage" @click.prevent="_page = lastPage"/>
+                            <CommandButton :styling="styling.pagingCommand" :cmd="ref(new GridCommandDefinition(() => {}).withIcon('fas fa-angle-right'))" :disabled="_page == lastPage" @click.prevent="_page++"/>
+                            <CommandButton :styling="styling.pagingCommand" :cmd="ref(new GridCommandDefinition(() => {}).withIcon('fas fa-angles-right'))" :disabled="_page == lastPage" @click.prevent="_page = lastPage"/>
 
                             <div :class="styling.pagingTextClass" v-if="pagingFooterText != undefined">{{ pagingFooterText.replace("{0}", "" + (_page + 1)).replace("{1}", "" + (lastPage + 1)) }}</div>
                         </td>
@@ -87,7 +87,7 @@
                             <div :class="styling.bottomRowClass">
                                 <div :class="styling.gridCommandContainerClass">
                                     <span v-for="(cmd, i) in commandsForSelectedItems(selectedItems)" :key="i">
-                                        <CommandButton :cmd="cmd" :styling="styling.gridCommand" @click="cmd.command(selectedItems)"/>
+                                        <CommandButton :cmd="ref(cmd)" :styling="styling.gridCommand" @click="cmd.command(selectedItems)"/>
                                         &nbsp;
                                     </span>
                                 </div>
@@ -112,8 +112,9 @@ import { Downloader } from './Downloader';
 import { Printer } from './Printer';
 
 import type { IGridColumnDefinition } from './GridColumnDefinition';
-import { GridBaseCommandDefinition, GridCommandDefinition, GridRowCommandDefinition } from './GridCommandDefinition';
+import { GridCommandDefinition, type IGridBaseCommandDefinition, type IGridCommandDefinition, type IGridRowCommandDefinition } from './GridCommandDefinition';
 import { GridCommandStyleDefinition, GridStyleDefinition } from './style';
+import { ref } from 'vue';
 
 export enum GridSelectionMode {
     None,
@@ -165,7 +166,7 @@ export class GridStyleParser {
         return this.extendWithClassList(o, style.dataRowSelectedClass, isSelected);
     }
         
-    public static getCommandClasses(style: GridCommandStyleDefinition, command: GridBaseCommandDefinition, isActive: Boolean = false) {
+    public static getCommandClasses(style: GridCommandStyleDefinition, command: IGridBaseCommandDefinition, isActive: Boolean = false) {
         let o = this.extendWithClassList(command.cssClass, style.containerClass);
         if(command.iconClass != "" && command.iconClass != undefined){
             o = this.extendWithClassList(o, style.iconCommandClass);
@@ -201,14 +202,15 @@ export default {
             GridSelectionMode: GridSelectionMode,
             styleParser: GridStyleParser,
             GridCommandDefinition: GridCommandDefinition,
-            GridPagingMode: GridPagingMode
+            GridPagingMode: GridPagingMode,
+            ref: ref
         };
     },
     props: {
         title: { type: String, default: null },
         columns: { type: Array<IGridColumnDefinition>, required: true },
-        rowCommands: { type: Array<GridRowCommandDefinition>, default: [] },
-        gridCommands: { type: Array<GridCommandDefinition>, default: [] },
+        rowCommands: { type: Array<IGridRowCommandDefinition>, default: [] as IGridRowCommandDefinition[] },
+        gridCommands: { type: Array<IGridCommandDefinition>, default: [] as IGridCommandDefinition[] },
         selectionMode: { type: Number, default: GridSelectionMode.None },
         selectedItems: { type: Array<any>, default: [] },
         itemCount: { type: Number },
@@ -269,7 +271,7 @@ export default {
             const allItems = [] as HTMLElement[];
             let oldIdx = 0;
             for(let i = 0; i < container.children.length; i++){
-                const current = container.children.item(i)!;
+                const current = container.children.item(i) as HTMLElement;
                 allItems.push(current);
                 if (current.getAttribute('name') == item.getAttribute('name')) {
                     oldIdx = i;
@@ -315,7 +317,7 @@ export default {
             const container = item.parentElement!;
             const allItems = [] as HTMLElement[];
             for(let i = 0; i < container.children.length; i++){
-                allItems.push(container.children.item(i)!);
+                allItems.push(container.children.item(i) as HTMLElement);
             }
             
             const orderedColumns = [] as IGridColumnDefinition[];
@@ -419,8 +421,8 @@ export default {
         deselectAll() {
             this._selectedItems = [];
         },
-        rowCommandsForItem(item:any): GridRowCommandDefinition[]{
-            const r = [] as GridRowCommandDefinition[];
+        rowCommandsForItem(item:any): IGridRowCommandDefinition[]{
+            const r = [] as IGridRowCommandDefinition[];
             for (const i in this.rowCommands) {
                 const cmd = this.rowCommands[i];
                 if (cmd.filter(item))
@@ -428,8 +430,8 @@ export default {
             }
             return r;
         },
-        commandsForSelectedItems(items: any[]): GridCommandDefinition[]{
-            const r = [] as GridCommandDefinition[];
+        commandsForSelectedItems(items: any[]): IGridCommandDefinition[]{
+            const r = [] as IGridCommandDefinition[];
             for (const i in this._gridCommands) {
                 const cmd = this._gridCommands[i];
                 if (cmd.filter(items))
@@ -573,7 +575,7 @@ export default {
             get(): number { return this.itemsPerPageField; },
             set(v: number) { this.itemsPerPageField = v; this.remotePaging(); this.$emit("update:itemsPerPage", v); }
         },
-        _gridCommands(): GridCommandDefinition[] {
+        _gridCommands(): IGridCommandDefinition[] {
                 const r = this.gridCommands.slice();
                 if(this.isExportEnabled) {
                     const csvCmd = 

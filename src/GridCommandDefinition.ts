@@ -14,7 +14,7 @@ export interface IGridRowCommandDefinition extends IGridBaseCommandDefinition{
     filter: (item: any) => boolean;
 }
 
-export class GridBaseCommandDefinition {
+export class GridBaseCommandDefinition implements IGridBaseCommandDefinition {
     protected _label: string | undefined = undefined;
     protected _iconClass: string | undefined = undefined;
     protected _cssClass: string | undefined = undefined;

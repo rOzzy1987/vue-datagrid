@@ -30,9 +30,9 @@ abstract class DownloaderBase {
         return this._impl;
     } 
 }
+
 export class Downloader extends DownloaderBase {
     public async download(content: string | Blob, fileName: string){
         (await this.getImpl()).download(content, fileName);
     }
-
 }
