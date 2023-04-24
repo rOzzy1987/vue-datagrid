@@ -1,4 +1,4 @@
-interface IDownloader {
+export interface IDownloader {
     download(content: string| Blob, fileName: string): Promise<void>;
 }
 
