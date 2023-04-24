@@ -1,9 +1,5 @@
-export interface IDownloader {
+export interface IDownloaderImpl {
     download(content: string| Blob, fileName: string): Promise<void>;
-}
-
-interface IDownloaderImpl extends IDownloader {
-
 }
 
 class WebDownloaderImpl implements IDownloaderImpl {
@@ -27,14 +23,14 @@ class WebDownloaderImpl implements IDownloaderImpl {
 }
 
 abstract class DownloaderBase {
-    private _impl: IDownloaderImpl | null = null;
+    protected _impl: IDownloaderImpl | null = null;
     protected async getImpl(): Promise<IDownloaderImpl> {
         if (this._impl == null)
             this._impl =  new WebDownloaderImpl()
         return this._impl;
     } 
 }
-export class Downloader extends DownloaderBase implements IDownloader {
+export class Downloader extends DownloaderBase {
     public async download(content: string | Blob, fileName: string){
         (await this.getImpl()).download(content, fileName);
     }
