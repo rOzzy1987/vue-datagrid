@@ -108,8 +108,8 @@
 <script lang="ts">
 import CommandButton from './CommandButton.vue';
 import RowCommandButton from './RowCommandButton.vue';
-import { Downloader, IDownloader } from './Downloader';
-import { IPrinter, Printer } from './Printer';
+import { Downloader, type IDownloader } from './Downloader';
+import { type IPrinter, Printer } from './Printer';
 
 import type { IGridColumnDefinition } from './GridColumnDefinition';
 import { GridCommandDefinition, type IGridBaseCommandDefinition, type IGridCommandDefinition, type IGridRowCommandDefinition } from './GridCommandDefinition';
@@ -469,7 +469,7 @@ export default {
                 }
                 csv += rowArr.join(sep) + "\n";
             }
-            this.downloader.download(csv, this.exportFilenameFn()+".csv");
+            this.downloader.value!.download(csv, this.exportFilenameFn()+".csv");
         },
         print() {
             const styles = document.head.getElementsByTagName("style");
@@ -499,7 +499,7 @@ export default {
             
             table.getElementsByTagName("tbody")[0].innerHTML = tBody;
 
-            this.printer.print(`<html><head>${hTxt}</head><body>${table.outerHTML}</body></html>`);
+            this.printer.value!.print(`<html><head>${hTxt}</head><body>${table.outerHTML}</body></html>`);
         },
         getColumnStates(): {id: string, isHidden: boolean}[] {
             return this._columns.map(c=> ({id: c.id, isHidden: c.isOptional && c.isHidden}));
