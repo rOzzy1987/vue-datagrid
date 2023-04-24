@@ -112,7 +112,7 @@ import { Downloader } from './Downloader';
 import { Printer } from './Printer';
 
 import type { IGridColumnDefinition } from './GridColumnDefinition';
-import { GridBaseCommandDefinition, GridCommandDefinition, GridRowCommandDefinition, IGridCommandDefinition, IGridRowCommandDefinition } from './GridCommandDefinition';
+import { GridBaseCommandDefinition, GridCommandDefinition, GridRowCommandDefinition } from './GridCommandDefinition';
 import { GridCommandStyleDefinition, GridStyleDefinition } from './style';
 
 export enum GridSelectionMode {

@@ -17,7 +17,7 @@ add the package to yout app and include the source files you need, like
 ### Dependencies
 The project is mainly using Bulma as the CSS library, but you can define which CSS classes are applied to each type of element. For this, you'll have to pass a `GridStyleDefinition` object when defining the grid
 
-The code is using SCSS styles, so you'll need _sass_ to compile them
+The example code is using SCSS styles, so you'll need _sass_ to compile them
 
 Obviously Vue3 is needed as the name suggests
 
