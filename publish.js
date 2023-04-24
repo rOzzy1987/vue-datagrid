@@ -54,7 +54,7 @@ async function checkArguments(argc, argv) {
     }
 
     if (increment){
-        incrementVersion(message);
+        await incrementVersion(message);
     }
 }
 
