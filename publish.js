@@ -92,7 +92,11 @@ async function publish() {
 
 async function main() {
     await incremeentIfNeeded(argc, argv);
+    try {
     await publish();
+    } catch (e) {
+        console.log(e);
+    }
 }
 
 main();
