@@ -50,7 +50,7 @@ async function checkArguments(argc, argv) {
         if (argv[i] == "-i" || argv[i] == "--increment-version")
             increment = true;
         if ((argv[i] == "-m" || argv[i] == "--message") && argc > i + 1)
-            message = argv[++i];
+            message = argv[++i].replace("\\n", "\n");
     }
 
     if (increment){
