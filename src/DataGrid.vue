@@ -551,6 +551,10 @@ export default {
                     this.modelValueField = v;
                     this.sort();
                     this.$emit("update:modelValue", v);
+
+                    const newS = this.selectedItemsField.filter(s => v.indexOf(s) > -1);
+                    if(this.selectedItemsField.length != newS.length)
+                        this._selectedItems = newS
                 }
             }
         },
