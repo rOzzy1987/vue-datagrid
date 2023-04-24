@@ -44,8 +44,8 @@
     "examples/*.json",
     "examples/*.ts",
     "examples/*.cjs",
-    "examples/public/*.*",
-    "examples/src/*.*"
+    "examples/public/*",
+    "examples/src/*"
   ],
   "author": "Mihály Rozovits <rozovits.mihaly@gmail.com>",
   "license": "MIT"
