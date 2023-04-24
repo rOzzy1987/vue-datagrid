@@ -2,7 +2,7 @@ export interface IDownloaderImpl {
     download(content: string| Blob, fileName: string): Promise<void>;
 }
 
-class WebDownloaderImpl implements IDownloaderImpl {
+export class WebDownloaderImpl implements IDownloaderImpl {
     public async download(content: string | Blob, fileName: string): Promise<void> {
         const element = document.createElement('a');
         
