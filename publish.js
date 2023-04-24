@@ -82,7 +82,7 @@ async function publish() {
     var changes = status.split(/\n/).map(l => l.trimEnd()).filter(l => l!= "");
     if (changes.every(l => l == "")){
         console.log("[Publish] No changes, starting publish");
-        await runCmd("npm", ["publish", "--access", "public"]);
+        await runCmd(/^win/i.test(process.platform) ? 'npm.cmd' : 'npm', ["publish", "--access", "public"]);
         console.log("[Publish] Package published");
     }
     else {
@@ -92,11 +92,7 @@ async function publish() {
 
 async function main() {
     await incremeentIfNeeded(argc, argv);
-    try {
     await publish();
-    } catch (e) {
-        console.log(e);
-    }
 }
 
 main();
