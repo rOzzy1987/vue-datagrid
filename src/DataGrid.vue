@@ -108,8 +108,8 @@
 <script lang="ts">
 import CommandButton from './CommandButton.vue';
 import RowCommandButton from './RowCommandButton.vue';
-import { Downloader } from './Downloader';
-import { Printer } from './Printer';
+import { Downloader, IDownloader } from './Downloader';
+import { IPrinter, Printer } from './Printer';
 
 import type { IGridColumnDefinition } from './GridColumnDefinition';
 import { GridCommandDefinition, type IGridBaseCommandDefinition, type IGridCommandDefinition, type IGridRowCommandDefinition } from './GridCommandDefinition';
@@ -240,8 +240,8 @@ export default {
         itemsPerPageSelectorText: {type: String, default: "Items per page: "},
         styling: { type: GridStyleDefinition, default: new GridStyleDefinition() },
         
-        downloader: { type: Downloader, default: new Downloader() },
-        printer: { type: Printer, default: new Printer() },
+        downloader: { type: ref<IDownloader>, default: new Downloader() },
+        printer: { type: ref<IPrinter>, default: new Printer() },
     },
     methods: {
         colOrderGrabItem(event: Event, origin: {x:number, y: number}) {

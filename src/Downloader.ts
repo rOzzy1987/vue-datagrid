@@ -1,3 +1,6 @@
+export interface IDownloader {
+    download(content: string| Blob, fileName: string): Promise<void>;
+}
 export interface IDownloaderImpl {
     download(content: string| Blob, fileName: string): Promise<void>;
 }
@@ -31,7 +34,7 @@ abstract class DownloaderBase {
     } 
 }
 
-export class Downloader extends DownloaderBase {
+export class Downloader extends DownloaderBase implements IDownloader {
     public async download(content: string | Blob, fileName: string){
         (await this.getImpl()).download(content, fileName);
     }
