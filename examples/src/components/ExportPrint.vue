@@ -1,7 +1,8 @@
 <template>
   <div>
-    <p class="block"></p>
-    <data-grid :model-value="rows" :columns="cols" :is-export-enabled="true" :is-print-enabled="true"/>
+    <p class="block">Just enable printing and xporting by setting <span class="is-family-monospace">isPrintEnabled</span> or <span class="is-family-monospace">isExportEnabled</span> property to <span class="is-family-monospace">true</span></p>
+    <p class="block">Note that exporting will respect custom column orders, but will export all columns. Printing will respect the hidden states as well. Neither will show any UI controls such es paging or commands</p>
+    <data-grid title="Printable & exportable data grid" :model-value="rows" :columns="cols" :is-export-enabled="true" :is-print-enabled="true" :items-per-page="20"/>
   </div>
 </template>
 
@@ -14,7 +15,7 @@ export default {
   components: { DataGrid },
     data() {
         return {
-            rows: (new Generator()).getRandomData(20),
+            rows: (new Generator()).getRandomData(200),
             cols: [
                 new GridColumnDefinition("name", "Name", p => p.name)
                     .withFormat(n => `${n.first} ${n.middle ?? ''} ${n.last}`),

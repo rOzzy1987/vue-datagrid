@@ -1,5 +1,5 @@
 <template>
-    <div :class="styling.mainContainerClass" style="width: 100%; overflow-x: auto;" :style="{'user-select': selectionMode != GridSelectionMode.None ? 'none': 'initial'}">
+    <div ref="container" :class="styling.mainContainerClass" style="width: 100%; overflow-x: auto;" :style="{'user-select': selectionMode != GridSelectionMode.None ? 'none': 'initial'}">
         <div v-if="title != ''" :class="styling.titleClass">
             {{ title }}
         </div>
@@ -146,6 +146,18 @@ export class GridStyleParser {
 
     private static classList(cssStr: string) {
         return cssStr.split(" ").filter(c => c != "");
+    }
+
+    public static toString(o: any) 
+    {
+        const r = [] as string[];
+        for (const key in o) {
+            if (Object.prototype.hasOwnProperty.call(o, key)) {
+                if (o[key] == true)
+                    r.push(key);
+            }
+        }
+        return r.join(" ");
     }
     
     public static getDataRowClasses(style: GridStyleDefinition, isSelected: boolean) {
@@ -470,30 +482,22 @@ export default {
                 const s = styles.item(i) as HTMLStyleElement;
                 hTxt += s.outerHTML;
             }
-            let table = "<table class=\"table is-fullwidth\"><thead><tr>";
-            for (const col of this._columns) {
-                table += "<th class=\"" + col.headerCssClasses.join(" ") + "\" style=\"" + (col.headerStyle ?? "") + "\">"+col.title+"</th>";
-            }
-            table += "</tr></thead><tbody>";
-            for (const row of this._modelValue) {
-                table += "<tr>";
-                for (const col of this._columns) {
-                    table += "<td class=\"" + col.cssClasses.join(" ") + "\" style=\"" + (col.style ?? "") + "\">" +  col.getHtml(row) + "</td>"
-                }
-                table += "</tr>"
-            }
-            table += "</tbody>";
             
-            if(this.isFooterEnabled) {
-                table += "<tfoot><tr>";
-                for (const col of this._columns) {
-                    table += "<th>"+col.title+"</th>";
-                }
-                table += "</tr><tfoot>";
-            }
-            table += "</table>";
+            let table = document.createElement("div");
+            table.innerHTML = (this.$refs.container as HTMLElement).outerHTML;
 
-            this.printer.print(`<html><head>${hTxt}</head><body>${table}</body></html>`);
+            let tBody = "";
+            for (const row of this._modelValue) {
+                tBody += "<tr class=\"" + this.styleParser.toString(this.styleParser.getDataRowClasses(this.styling, false))+"\">";
+                for (const col of this._columns) {
+                    tBody += "<td class=\"" + col.cssClasses.join(" ") + "\" style=\"" + (col.style ?? "") + "\">" +  col.getHtml(row) + "</td>"
+                }
+                tBody += "</tr>"
+            }
+            
+            table.getElementsByTagName("tbody")[0].innerHTML = tBody;
+
+            this.printer.print(`<html><head>${hTxt}</head><body>${table.outerHTML}</body></html>`);
         },
         getColumnStates(): {id: string, isHidden: boolean}[] {
             return this._columns.map(c=> ({id: c.id, isHidden: c.isOptional && c.isHidden}));
