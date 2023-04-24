@@ -141,6 +141,10 @@ export class GridColumnDefinition implements IGridColumnDefinition {
         this._sortFn = (a,b) => (this.valueFn(a)+"").localeCompare(this.valueFn(b)+"");
         return this;
     }
+    public withRemoteSort() {
+        this._sortFn = (a,b) => { console.error("server side sorting set, but sorted on client side: ", this); return 0; };
+        return this;
+    }
     public withStyle(style: string | undefined) {
         this._style = style;
         return this;

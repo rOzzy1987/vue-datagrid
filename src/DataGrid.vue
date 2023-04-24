@@ -54,7 +54,7 @@
                     <tr v-if="_modelValue.length == 0">
                         <td :colspan="columnCount">{{ emptyText }}</td>
                     </tr>
-                    <tr v-if="_modelValue.length != 0 && canShowMore">
+                    <tr v-if="_modelValue.length != 0 && pagingMode == GridPagingMode.ShowMore">
                         <td :colspan="columnCount" :class="styling.showMoreCommandRowClass">
                             <CommandButton :styling="styling.showMoreCommand" :cmd="new GridCommandDefinition(() => {}).withLabel(showMoreText)" @click="showMore" />
                         </td>
@@ -96,7 +96,7 @@
                                     <span v-for="n of [10, 20, 50, 100, 200]" :key="n" :style="{'text-decoration': _itemsPerPage == n ? 'underline' : 'none'}" @click="_itemsPerPage = n">&nbsp;{{ n }}&nbsp;</span>
                                 </div>
                                 <div :class="styling.itemCountContainerClass" v-if="itemsFooterText != undefined">
-                                    {{ itemsFooterText.replace("{0}", "" + modelValue.length ) }}
+                                    {{ itemsFooterText.replace("{0}", "" + _itemCount ) }}
                                 </div>
                             </div>
                         </td>
@@ -112,13 +112,19 @@ import { Downloader } from './Downloader';
 import { Printer } from './Printer';
 
 import type { IGridColumnDefinition } from './GridColumnDefinition';
-import { GridBaseCommandDefinition, GridCommandDefinition, GridRowCommandDefinition } from './GridCommandDefinition';
+import { GridBaseCommandDefinition, GridCommandDefinition, GridRowCommandDefinition, IGridCommandDefinition, IGridRowCommandDefinition } from './GridCommandDefinition';
 import { GridCommandStyleDefinition, GridStyleDefinition } from './style';
 
 export enum GridSelectionMode {
     None,
     One,
     Multi
+}
+
+export enum GridPagingMode {
+    Local,
+    Remote,
+    ShowMore
 }
 
 export class GridStyleParser {
@@ -162,6 +168,7 @@ export class GridStyleParser {
 }
 
 
+
 export default {
     data(props) {
         return {
@@ -181,7 +188,8 @@ export default {
             }, 
             GridSelectionMode: GridSelectionMode,
             styleParser: GridStyleParser,
-            GridCommandDefinition: GridCommandDefinition
+            GridCommandDefinition: GridCommandDefinition,
+            GridPagingMode: GridPagingMode
         };
     },
     props: {
@@ -191,6 +199,7 @@ export default {
         gridCommands: { type: Array<GridCommandDefinition>, default: [] },
         selectionMode: { type: Number, default: GridSelectionMode.None },
         selectedItems: { type: Array<any>, default: [] },
+        itemCount: { type: Number },
         modelValue: { type: Array<any>, required: true },
         // Sorting
         isSortable: { type: Boolean, default: false },
@@ -205,7 +214,7 @@ export default {
         // Paging
         itemsPerPage: { type: Number, default: Number.POSITIVE_INFINITY },
         page: { type: Number, default: 0 },
-        canShowMore: { type: Boolean, default: false },
+        pagingMode: { type: Number, default: GridPagingMode.Local },
         showMoreText: {type: String, default: "Show more"},
         // Internationalization
         emptyText: { type: String, default: "- No data -" },
@@ -308,6 +317,8 @@ export default {
             event.preventDefault();
         },
         setOrder(colId: string) {
+            if (this.pagingMode == GridPagingMode.ShowMore || !this.isSortable)
+                return;
             const col = this._columns.filter(c => c.id == colId)[0];
             if (col == null || col.sortFn == null) {
                 return;
@@ -322,6 +333,10 @@ export default {
             this.sort();
         },
         sort() {
+            if (this.pagingMode == GridPagingMode.Remote){
+                this.remotePaging();
+                return;
+            }
             if (!this.isSortable || this._sortByColumn == undefined)
                 return;
             const col = this._columns.filter(c => c.id == this._sortByColumn)[0];
@@ -331,6 +346,14 @@ export default {
                 ? col.sortFn
                 : (a: any, b: any) => -col.sortFn!(a, b, false);
             this._modelValue = this._modelValue.slice().sort(sortFn);
+        },
+        remotePaging() {
+            if(this.pagingMode == GridPagingMode.Remote){
+                this.$emit("paging", {items: this._itemsPerPage, page: this._page, orderBy: this._sortByColumn, orderAscending: this._sortAscending});
+            }
+        },
+        showMore() {
+            this.$emit("showMore", {items: this._itemsPerPage, skip: this._modelValue.length});
         },
         // Selection
         itemClicked(ev: MouseEvent, idx: number) {
@@ -492,9 +515,6 @@ export default {
             }
             this._columns = newColumns;
         },
-        showMore() {
-            this.$emit("showMore", this._modelValue.length);
-        }
     },
     computed: {
         _sortByColumn: {
@@ -531,7 +551,7 @@ export default {
             }
         },
         _pagedModelValue() {
-            if (this._itemsPerPage == Number.POSITIVE_INFINITY) {
+            if (this._itemsPerPage == Number.POSITIVE_INFINITY || this.pagingMode == GridPagingMode.Remote ) {
                 return this._modelValue;
             }
             const s = this._page * this._itemsPerPage;
@@ -539,11 +559,11 @@ export default {
         },
         _page: {
             get(): number { return this.pageField; },
-            set(v: number) { this.pageField = v; this.$emit("update:page", v); }
+            set(v: number) { this.pageField = v; this.remotePaging(); this.$emit("update:page", v); }
         },
         _itemsPerPage: {
             get(): number { return this.itemsPerPageField; },
-            set(v: number) { this.itemsPerPageField = v; this.$emit("update:itemsPerPage", v); }
+            set(v: number) { this.itemsPerPageField = v; this.remotePaging(); this.$emit("update:itemsPerPage", v); }
         },
         _gridCommands(): GridCommandDefinition[] {
                 const r = this.gridCommands.slice();
@@ -568,8 +588,11 @@ export default {
             get(): IGridColumnDefinition[] { return this.columnsField; },
             set(v: IGridColumnDefinition[]) { this.columnsField = v; this.$emit("update:columns", v); }  
         },
+        _itemCount() {
+            return this.itemCount ?? this.modelValue.length;
+        },
         lastPage() {
-            return Math.ceil(this._modelValue.length / this._itemsPerPage) - 1;
+            return Math.ceil(this._itemCount / this._itemsPerPage) - 1;
         },
         pageButtons(){
             const r = [] as number[];
@@ -604,7 +627,8 @@ export default {
         "update:sortAscending",
         "update:sortByColumn",
         "update:columns",
-        "showMore"
+        "showMore",
+        "paging"
     ],
     watch: {
         modelValue: {
