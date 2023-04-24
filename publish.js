@@ -1,73 +1,96 @@
 'use strict';
 
 const fs = require('fs');
-const { exec } = require("child_process");
+const { spawn } = require("child_process");
 
 var argv = process.argv.slice(2);
 var argc = argv.length;
 
+var log = fs.createWriteStream("publish.log");
+var err = fs.createWriteStream("publish.error.log");
 
-function runCmd(cmd, processFn){
-    var prc = exec(cmd, (e, so, se) => {
-        if (e) {
-            console.error(e.message);
-        }
-        if (se) {
-            console.error(se);
-        }
-        if (prc.exitCode != 0)
-            return;
-        
-        processFn(so);
+function runCmd(cmd, args){
 
+    log.write(new Date().toISOString() +" Running command: "+ cmd + "\n");
+    var prc = spawn(cmd, args);
+    var out = '';
+    return new Promise((res, rej) => {
+        prc.stdout.on('data', (x) => {
+            out += x.toString();
+            log.write(x.toString());
+        });
+        prc.stderr.on('data', (x) => {
+            err.write(x.toString());
+        });
+        prc.on('error', (e) => {
+            err.write(e.toString());
+            console.error("[Publish] Error! Check logs")
+            rej(err.message);
+        });
+        prc.on('exit', (c) => {
+            if (c > 0) {
+                err.write(`[Publish] Process exited with code ${c}\n`)
+                rej(c);
+            } else {
+                log.write(`[Publish] Process exited with code ${c}\n`)
+                res(out);
+            }
+        });
     });
 }
 
-function publish() {
-    runCmd("npm publish --access public", (o) => {
-        console.log("Package published");
-    });
-}
+async function incremeentIfNeeded(argc, argv) {
+    if(argc > 0){
+        if (argv[0] == "-i" || argv[0] == "--increment-version")
+        {
+            var rawdata = fs.readFileSync('package.json');
+            var packJson = JSON.parse(rawdata);
 
-runCmd("git status -s", (changes) => {
+            var match = /([0-9]+).([0-9]+).([0-9]+)/g.exec(packJson.version);
+            var maj = match[1];
+            var min = match[2];
+            var rev = Number(match[3]);
 
-    var p = changes.split(/\n/g);
-    if (p.every(s => s.trim() == "")){
-        console.log("No changes, starting publish");
-        publish();
-    }
-    else {
-        console.error("Changes present");
-        if(argc > 0){
-            if (argv[0] == "-inc")
-            {
-                var rawdata = fs.readFileSync('package.json');
-                var packJson = JSON.parse(rawdata);
+            packJson.version = `${maj}.${min}.${++rev}`;
 
-                var match = /([0-9]+).([0-9]+).([0-9]+)/g.exec(packJson.version);
-                var maj = match[1];
-                var min = match[2];
-                var rev = Number(match[3]);
+            fs.writeFileSync('package.json', JSON.stringify(packJson, null, 2));
 
-                packJson.version = `${maj}.${min}.${++rev}`;
+            console.log("[Publish] package.json updated, new version: " + packJson.version);
 
-                fs.writeFileSync('package.json', JSON.stringify(packJson, null, 2));
+            await runCmd("git", ["add", "package.json"]);
+            var status = await runCmd("git", ["status", "-s"]);
+            var changes = status.split(/\n/).map(l => l.trimEnd()).filter(l => l!= "");
 
-                console.log("package.json updated, new version: " + packJson.version);
-
-                runCmd("git add package.json", () => {
-                    runCmd(`git commit -m "version bump to ${packJson.version}"`, () => {
-                        console.log("committed")
-                        runCmd(`git push`, () => {
-                            console.log("pushed")
-                            publish();
-                        });
-                    });
-
-                });
+            if (changes.every(l => l.charAt(0) != ' ')) {
+                await runCmd("git", ["commit", "-m", `version bump to ${packJson.version}`]);
+                console.log("[Publish] committed")
+                await runCmd("git", ["push"]);
+                console.log("[Publish] pushed");
+            } else {
+                console.log("[Publish] Unstaged changes present, skipping commit & push");
             }
         }
     }
+}
 
-});
+async function publish() {
+    var status = await runCmd("git", ["status", "-s"]);
+    var changes = status.split(/\n/).map(l => l.trimEnd()).filter(l => l!= "");
+    if (changes.every(l => l == "")){
+        console.log("[Publish] No changes, starting publish");
+        await runCmd("npm", ["publish", "--access", "public"]);
+        console.log("[Publish] Package published");
+    }
+    else {
+        console.error("[Publish] Changes present, skipping publish");
+    }
+}
+
+async function main() {
+    await incremeentIfNeeded(argc, argv);
+    await publish();
+}
+
+main();
+
 
