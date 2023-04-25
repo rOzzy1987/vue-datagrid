@@ -240,8 +240,8 @@ export default {
         itemsPerPageSelectorText: {type: String, default: "Items per page: "},
         styling: { type: GridStyleDefinition, default: new GridStyleDefinition() },
         
-        downloader: { type: ref<IDownloader>, default: new Downloader() },
-        printer: { type: ref<IPrinter>, default: new Printer() },
+        downloader: { type: ref<IDownloader>, default: ref(new Downloader()) },
+        printer: { type: ref<IPrinter>, default: ref(new Printer()) },
     },
     methods: {
         colOrderGrabItem(event: Event, origin: {x:number, y: number}) {
