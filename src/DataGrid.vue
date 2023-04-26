@@ -362,7 +362,7 @@ export default {
                 ? col.sortFn
                 : (a: any, b: any) => -col.sortFn!(a, b, false);
             this._modelValue = this._modelValue.slice().sort(sortFn);
-            console.log(`[[DataGrid]] Sorting done in: ${millis}ms`);
+            console.log(`[[DataGrid]] Sorting done in: ${Date.now()-millis}ms`);
         },
         remotePaging() {
             if(this.pagingMode == GridPagingMode.Remote){
