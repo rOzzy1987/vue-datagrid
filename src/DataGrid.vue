@@ -356,10 +356,13 @@ export default {
             const col = this._columns.filter(c => c.id == this._sortByColumn)[0];
             if(col == null || col.sortFn == null)
                 return;
+
+            const millis = Date.now();
             const sortFn = this._sortAscending
                 ? col.sortFn
                 : (a: any, b: any) => -col.sortFn!(a, b, false);
             this._modelValue = this._modelValue.slice().sort(sortFn);
+            console.log(`[[DataGrid]] Sorting done in: ${millis}ms`);
         },
         remotePaging() {
             if(this.pagingMode == GridPagingMode.Remote){
